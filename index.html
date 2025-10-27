@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작은도서관 브랜드 세팅</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- html2canvas (Image Save) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <style>
+        /* Inter 폰트 기본 적용, Noto Sans KR은 한글 대체 */
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* AI 생성 중 버튼 애니메이션 */
+        .ai-generating::after {
+            content: '.';
+            animation: dots 1s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% {
+                color: rgba(0,0,0,0);
+                text-shadow:
+                    .25em 0 0 rgba(0,0,0,0),
+                    .5em 0 0 rgba(0,0,0,0);
+            }
+            40% {
+                color: white;
+                text-shadow:
+                    .25em 0 0 rgba(0,0,0,0),
+                    .5em 0 0 rgba(0,0,0,0);
+            }
+            60% {
+                text-shadow:
+                    .25em 0 0 white,
+                    .5em 0 0 rgba(0,0,0,0);
+            }
+            80%, 100% {
+                text-shadow:
+                    .25em 0 0 white,
+                    .5em 0 0 white;
+            }
+        }
+        
+        /* 커스텀 포커스 링 */
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4f46e5; /* indigo-600 */
+            box-shadow: 0 0 0 2px #c7d2fe; /* indigo-200 */
+        }
+
+        /* 결과 페이지 제목 아이콘 색상 */
+        .result-group-icon {
+            color: #8B5CF6; /* 보라색 계열 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-8">
+        
+        <!-- 헤더 -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-900">작은도서관 브랜드 세팅</h1>
+            <p class="text-lg text-gray-600 mt-2">당신의 도서관을 위한 고유한 아이덴티티를 만들어보세요.</p>
+        </header>
+
+        
+        <!-- 진행 상황 -->
+        <div id="progress-bar-container" class="mb-8">
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>진행 상황</span>
+                <span id="progress-text" class="font-medium text-indigo-600">1 / 10</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 10%"></div>
+            </div>
+        </div>
+
+        
+        <!-- 질문 섹션 -->
+        <main id="question-section" class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+            
+            <!-- *** 안내 문구 위치 이동: 이 블록을 삭제합니다. *** -->
+            
+            <!-- 질문이 렌더링될 컨테이너 -->
+            <div id="question-container"></div>
+
+            
+            <!-- 필수 항목 에러 메시지 -->
+            <div id="error-message" class="text-red-600 text-sm mt-4 font-medium hidden">
+                <!-- 에러 메시지 표시 영역 -->
+            </div>
+
+            
+            <!-- AI 에러 메시지 (로컬 템플릿이라 현재 사용 안함) -->
+            <div id="ai-error-message" class="mt-4 p-3 bg-red-50 text-red-700 rounded-lg hidden">
+                <!-- AI 에러 메시지 표시 영역 -->
+            </div>
+        </main>
+
+        
+        <!-- 네비게이션 버튼 -->
+        <nav id="navigation-section" class="flex justify-between mt-8">
+            <button id="prev-btn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                이전
+            </button>
+            <button id="next-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                다음
+            </button>
+        </nav>
+
+        
+        <!-- 결과 페이지 섹션 -->
+        <section id="result-section" class="bg-white p-6 sm:p-8 rounded-lg shadow-md hidden">
+            <!-- 이미지 캡처 영역 -->
+            <div id="result-content-to-capture">
+                <h2 class="text-3xl font-bold text-center text-indigo-900 mb-2">🎉 브랜드 세팅 완료!</h2>
+                <p class="text-center text-gray-600 mb-8">도서관의 브랜드 아이덴티티가 완성되었습니다</p>
+                
+                <div id="result-container" class="space-y-8">
+                    <!-- 결과가 여기에 렌더링됩니다 -->
+                </div>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="text-center mt-10 space-y-4">
+                <button id="save-image-btn" class="px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                    <i class="fas fa-image mr-2"></i> 이미지로 저장하기 (JPG)
+                </button>
+                <div id="image-save-guide" class="text-sm text-gray-500">
+                    <p>💡 <strong>이미지 저장 안내</strong></p>
+                    <p>• PC: 다운로드 폴더에 JPG 파일로 자동 저장됩니다.</p>
+                    <p>• 스마트폰: 갤러리/사진 앱에 자동으로 저장됩니다.</p>
+                    <p class="mt-1">파일명: <strong>[도서관명]_브랜드가이드_[날짜].jpg</strong></p>
+                </div>
+                <button id="restart-btn" class="px-8 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+                    처음부터 다시 시작하기
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- 1. 상태 관리 ---
+        let currentStep = 0;
+        const brandData = {};
+        
+        // !!! 중요: 여기에 2단계에서 복사한 Google Apps Script 웹 앱 URL을 붙여넣으세요. !!!
+        const GOOGLE_SHEET_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; 
+        // 예: 'https://script.google.com/macros/s/AKfycb.../exec'
+
+        // --- 2. 질문 데이터 ---
+        const questions = [
+            // 도서관 기본 정보
+            {
+                id: 'library_name',
+                group: '도서관 기본 정보',
+                icon: 'fas fa-building',
+                question: '도서관명을 입력해주세요.',
+                description: '지역성과 상징성을 반영한 이름을 지어주세요. 별칭이나 상징 캐릭터도 가능합니다.',
+                type: 'text',
+                placeholder: '예: 햇살작은도서관, 마을숲북카페',
+                aiEnabled: false,
+                required: true
+            },
+            {
+                id: 'location',
+                group: '도서관 기본 정보',
+                icon: 'fas fa-map-marker-alt',
+                question: '도서관이 위치한 지역을 입력해주세요.',
+                description: '구체적인 주소나 지역명을 입력해주세요.',
+                type: 'text',
+                placeholder: '예: 서울시 성북구, 우리마을 문화회관 2층',
+                aiEnabled: false,
+                required: true
+            },
+            // 핵심 철학(Core Philosophy)
+            {
+                id: 'mission',
+                group: '핵심 철학',
+                icon: 'fas fa-lightbulb',
+                question: "도서관이 '무엇을 위해 존재하는지' (미션) 설명해주세요.",
+                description: '도서관의 존재 목적과 사명을 명확히 표현해주세요.',
+                type: 'textarea',
+                placeholder: '예: "지역 주민의 삶을 풍요롭게 하는 지식과 만남의 공간."',
+                aiEnabled: true,
+                example: '예: “지역 주민의 삶을 풍요롭게 하는 지식과 만남의 공간.”'
+            },
+            {
+                id: 'vision',
+                group: '핵심 철학',
+                icon: 'fas fa-bullseye',
+                question: "'어떤 도서관이 되고 싶은지' (비전) 설명해주세요.",
+                description: '도서관이 지향하는 미래의 모습을 그려보세요.',
+                type: 'textarea',
+                placeholder: '예: "모두에게 열려 있는 지역의 문화 플랫폼."',
+                aiEnabled: true,
+                example: '예: “모두에게 열려 있는 지역의 문화 플랫폼.”'
+            },
+            {
+                id: 'core_values',
+                group: '핵심 철학',
+                icon: 'fas fa-hands-helping',
+                question: '도서관 운영의 기준이 되는 핵심가치(Core Values)를 설정해주세요.',
+                description: '도서관의 모든 활동과 결정의 기준이 되는 가치들입니다.',
+                type: 'text',
+                placeholder: '예: 공유, 배움, 연결, 창의성, 포용',
+                aiEnabled: true,
+                example: '예: 공유(Sharing), 배움(Learning), 연결(Connection), 창의성(Creativity)'
+            },
+            // 메시지(Message)
+            {
+                id: 'slogan',
+                group: '메시지',
+                icon: 'fas fa-comment-dots',
+                question: '기억에 남는 슬로건(Slogan)을 만들어주세요.',
+                description: '도서관을 대표하는 짧고 강력한 메시지입니다.',
+                type: 'text',
+                placeholder: '예: "책으로 여는 내일"',
+                aiEnabled: true,
+                example: '예: “책으로 여는 내일”, “작은 도서관, 큰 세상.”'
+            },
+            // 스토리(Storytelling)
+            {
+                id: 'about_library',
+                group: '스토리',
+                icon: 'fas fa-book-reader',
+                question: '도서관을 소개하는 글을 작성해주세요.',
+                description: '3-5문단으로 도서관의 이야기를 들려주세요.',
+                type: 'textarea',
+                placeholder: '첫 문단은 설립 배경, 중간은 운영 방향, 마지막은 초대 메시지를 담아보세요.',
+                aiEnabled: true
+            },
+            // 운영 방향(Operations Alignment)
+            {
+                id: 'program_philosophy',
+                group: '운영 방향',
+                icon: 'fas fa-cogs',
+                question: '교육·문화·커뮤니티 프로그램의 방향성을 설명해주세요.',
+                description: '프로그램 기획과 운영의 기본 방향을 설정해주세요.',
+                type: 'textarea',
+                placeholder: '예: 단순 지식 전달이 아닌, 주민 간의 소통과 협력을 이끌어내는 참여형 프로그램을 지향합니다.',
+                aiEnabled: true
+            },
+            {
+                id: 'service_principles',
+                group: '운영 방향',
+                icon: 'fas fa-handshake',
+                question: '도서관 서비스의 기본 원칙을 설정해주세요.',
+                description: '직원들이 지켜야 할 서비스 행동지침입니다.',
+                type: 'textarea',
+                placeholder: '예: 모든 이용객에게 친절하고 평등하게, 신뢰할 수 있는 정보를 제공하며, 편안한 접근성을 보장합니다.',
+                aiEnabled: true
+            },
+            {
+                id: 'space_concept',
+                group: '운영 방향',
+                icon: 'fas fa-drafting-compass',
+                question: '도서관 공간이 어떤 느낌이었으면 좋겠나요?',
+                description: '물리적 공간이 브랜드 철학을 어떻게 반영할지 설명해주세요.',
+                type: 'textarea',
+                placeholder: '예: 따뜻한 조명과 원목 가구로 "우리집 서재" 같은 아늑함을 연출. 아이와 어른이 함께 책을 읽는 공간.',
+                aiEnabled: true
+            }
+        ];
+        
+        // --- 3. DOM 요소 ---
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const questionContainer = document.getElementById('question-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const questionSection = document.getElementById('question-section');
+        const navigationSection = document.getElementById('navigation-section');
+        const resultSection = document.getElementById('result-section');
+        const resultContainer = document.getElementById('result-container');
+        const restartBtn = document.getElementById('restart-btn');
+        const saveImageBtn = document.getElementById('save-image-btn');
+        const errorMessage = document.getElementById('error-message');
+        const aiErrorMessage = document.getElementById('ai-error-message');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+        const resultContentToCapture = document.getElementById('result-content-to-capture');
+
+        // --- 4. 렌더링 함수 ---
+        function renderQuestion(stepIndex) {
+            const q = questions[stepIndex];
+            
+            // *** 추가: 첫 번째 질문일 때만 안내 문구 생성 ***
+            const welcomeMessage = stepIndex === 0
+                ? `<div class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800">
+                       <p>환영합니다! 지금부터 10개의 질문을 통해 당신의 도서관이 가진 고유한 매력과 철학을 발견하는 여정을 시작합니다. 천천히 답변하며 우리 도서관만의 멋진 브랜드를 완성해보세요! (AI 버튼으로 아이디어를 얻을 수도 있어요 😉)</p>
+                   </div>`
+                : ''; // 첫 번째 질문이 아니면 빈 문자열
+
+            // 입력 필드 HTML
+            const inputElement = q.type === 'textarea'
+                ? `<textarea id="answer-input" class="w-full h-32 p-3 border border-gray-300 rounded-lg transition-colors duration-200" placeholder="${q.placeholder || ''}"></textarea>`
+                : `<input type="text" id="answer-input" class="w-full p-3 border border-gray-300 rounded-lg transition-colors duration-200" placeholder="${q.placeholder || ''}">`;
+
+            // 예시 HTML
+            const exampleElement = q.example
+                ? `<p class="text-sm text-gray-500 mt-2">${q.example}</p>`
+                : '';
+
+            // AI 버튼 HTML
+            const aiButtonElement = q.aiEnabled
+                ? `<button id="ai-generate-btn" class="mt-4 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400">
+                       🤖 AI로 작성하기
+                   </button>`
+                : '';
+
+            // 질문 컨테이너 채우기
+            questionContainer.innerHTML = `
+                ${welcomeMessage} <!-- *** 여기에 안내 문구 변수 추가 *** -->
+
+                <div class="mb-2">
+                    <span class="text-sm font-medium text-indigo-600">${q.group}</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-3">${q.question}</h2>
+                <p class="text-gray-600 mb-4">${q.description}</p>
+                
+                ${inputElement}
+                ${exampleElement}
+                ${aiButtonElement}
+            `;
+
+            // 기존 답변이 있으면 채우기
+            const answerInput = document.getElementById('answer-input');
+            if (brandData[q.id]) {
+                answerInput.value = brandData[q.id];
+            }
+
+            // AI 버튼 이벤트 리스너 (있는 경우)
+            if (q.aiEnabled) {
+                document.getElementById('ai-generate-btn').addEventListener('click', handleAiGenerate);
+            }
+
+            // 진행 상황 업데이트
+            updateProgress();
+            
+            // 버튼 상태 업데이트
+            prevBtn.disabled = stepIndex === 0;
+            if (stepIndex === questions.length - 1) {
+                nextBtn.textContent = '완료';
+                nextBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                nextBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else {
+                nextBtn.textContent = '다음';
+                nextBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                nextBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            }
+
+            // 에러 메시지 숨기기
+            hideError(errorMessage);
+            hideError(aiErrorMessage);
+        }
+
+        function updateProgress() {
+            const progress = ((currentStep + 1) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${currentStep + 1} / ${questions.length}`;
+        }
+        
+        function showResultPage() {
+            // 현재 단계의 답변 저장 (마지막 단계 답변 저장)
+            saveAnswer(); 
+            
+            // UI 전환
+            questionSection.classList.add('hidden');
+            navigationSection.classList.add('hidden');
+            progressBarContainer.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+            
+            // 결과 HTML 생성
+            resultContainer.innerHTML = ''; // 초기화
+            let currentGroup = '';
+
+            questions.forEach(q => {
+                const answer = brandData[q.id] || '미답변'; // 답변 없으면 '미답변' 표시
+                
+                // 그룹 타이틀 변경 시
+                if (q.group !== currentGroup) {
+                    currentGroup = q.group;
+                    resultContainer.innerHTML += `
+                        <div class="pt-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                <i class="${q.icon || 'fas fa-info-circle'} result-group-icon mr-2"></i> ${currentGroup}
+                            </h3>
+                            <div class="space-y-4">
+                    `;
+                }
+
+                // 답변 내용 추가
+                resultContainer.innerHTML += `
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <p class="font-semibold text-gray-700">${q.question.split('(')[0].trim()}</p>
+                        <p class="text-gray-800 mt-1 whitespace-pre-wrap">${answer}</p>
+                    </div>
+                `;
+
+                // 다음 질문이 다른 그룹인지 확인
+                const nextQuestion = questions[questions.indexOf(q) + 1];
+                if (!nextQuestion || nextQuestion.group !== currentGroup) {
+                    resultContainer.innerHTML += `</div></div>`; // 그룹 닫기
+                }
+            });
+
+            window.scrollTo(0, 0);
+        }
+
+        // --- 5. 이벤트 핸들러 ---
+        async function handleNext() { // 'async' 키워드 추가
+            // 유효성 검사
+            if (!validateInput()) {
+                return;
+            }
+            
+            // 답변 저장
+            saveAnswer();
+
+            // 다음 단계로
+            if (currentStep < questions.length - 1) {
+                currentStep++;
+                renderQuestion(currentStep);
+                window.scrollTo(0, 0);
+            } else {
+                // 완료 - Google Sheet에 저장
+                if (GOOGLE_SHEET_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE' || GOOGLE_SHEET_WEB_APP_URL === '') {
+                    // URL이 설정되지 않은 경우, 바로 결과 페이지만 표시
+                    console.warn('Google Sheet URL이 설정되지 않았습니다. 결과는 저장되지 않고 페이지만 표시됩니다.');
+                    showResultPage();
+                    return;
+                }
+                
+                // 버튼 로딩 상태 변경
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Google Sheet에 저장 중...';
+
+                try {
+                    // Google Sheet에 저장 시도
+                    await saveToGoogleSheet(brandData);
+                    
+                    // 성공 시 결과 페이지 표시
+                    // (버튼은 결과 페이지에서 '다시 시작하기'로 바뀌므로 원상복구 필요 없음)
+                    showResultPage();
+
+                } catch (error) {
+                    // 실패 시 에러 알림
+                    console.error('Google Sheet 저장 실패:', error);
+                    alert('Google Sheet에 저장하는 중 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요. (결과는 저장되지 않았지만, 페이지는 표시됩니다.)');
+                    
+                    // 저장은 실패했더라도 결과 페이지는 보여줌
+                    showResultPage(); 
+                    
+                    // 버튼 원상 복구 (결과 페이지에서 '다시 시작하기' 버튼이 있으므로, nextBtn을 복구할 필요는 없음)
+                }
+            }
+        }
+
+        function handlePrev() {
+            // 현재 답변 저장 (수정했을 수 있으므로)
+            saveAnswer();
+
+            // 이전 단계로
+            if (currentStep > 0) {
+                currentStep--;
+                renderQuestion(currentStep);
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        function restartApp() {
+            // 상태 초기화
+            currentStep = 0;
+            for (const key in brandData) {
+                delete brandData[key];
+            }
+            
+            // UI 전환
+            resultSection.classList.add('hidden');
+            questionSection.classList.remove('hidden');
+            navigationSection.classList.remove('hidden');
+            progressBarContainer.classList.remove('hidden');
+
+            // 첫 번째 질문 렌더링
+            renderQuestion(currentStep);
+            window.scrollTo(0, 0);
+        }
+        
+        function saveAnswer() {
+            const q = questions[currentStep];
+            const answerInput = document.getElementById('answer-input');
+            if(answerInput) { // answerInput이 존재하는지 확인 (결과 페이지 전환 시 null 방지)
+                brandData[q.id] = answerInput.value.trim();
+            }
+        }
+
+        function validateInput() {
+            const q = questions[currentStep];
+            const answerInput = document.getElementById('answer-input');
+            const value = answerInput.value.trim();
+
+            if (q.required && value === '') {
+                showError(errorMessage, '필수 항목입니다. 답변을 입력해주세요.');
+                answerInput.classList.add('border-red-500');
+                return false;
+            }
+            
+            hideError(errorMessage);
+            answerInput.classList.remove('border-red-500');
+            return true;
+        }
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        function hideError(element) {
+            element.textContent = '';
+            element.classList.add('hidden');
+        }
+
+        // --- 6. 이미지 저장 기능 (html2canvas) ---
+        async function saveAsJPG() {
+            saveImageBtn.disabled = true;
+            saveImageBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 이미지 생성 중...';
+
+            const element = resultContentToCapture; // 결과 컨테이너 전체를 캡처
+            
+            try {
+                const canvas = await html2canvas(element, {
+                    scale: 2, // 고해상도 이미지 생성을 위해 스케일 증가
+                    useCORS: true, // 외부 이미지 사용 시 CORS 허용
+                    logging: false // 콘솔 로깅 비활성화
+                });
+
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const libraryName = brandData.library_name ? brandData.library_name.replace(/[^a-zA-Z0-9가-힣]/g, '_') : '작은도서관';
+                const filename = `${libraryName}_브랜드가이드_${year}${month}${day}.jpg`;
+
+                // 모바일/PC 환경에 따라 처리
+                if (/(android|iphone|ipad|ipod)/i.test(navigator.userAgent)) {
+                    // 모바일: 새 탭에서 이미지 열기 (사용자가 직접 저장)
+                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    const newWindow = window.open();
+                    newWindow.document.write(`<img src="${imgData}" style="max-width:100%; height:auto;">`);
+                    newWindow.document.title = filename;
+                    newWindow.document.body.style.margin = '0';
+                    newWindow.document.body.style.display = 'flex';
+                    newWindow.document.body.style.justifyContent = 'center';
+                    newWindow.document.body.style.alignItems = 'center';
+                    alert('이미지가 새 탭에 열렸습니다. 길게 눌러 저장하거나 스크린샷 기능을 이용해 주세요.');
+                } else {
+                    // PC: 바로 다운로드
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    alert('이미지가 다운로드 폴더에 저장되었습니다!');
+                }
+            } catch (error) {
+                console.error("이미지 저장 실패:", error);
+                alert("이미지 저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
+            } finally {
+                saveImageBtn.disabled = false;
+                saveImageBtn.innerHTML = '<i class="fas fa-image mr-2"></i> 이미지로 저장하기 (JPG)';
+            }
+        }
+
+
+        // --- Google Sheet 저장 함수 추가 ---
+        async function saveToGoogleSheet(data) {
+            // 데이터를 Apps Script로 전송합니다.
+            // 'no-cors' 모드는 응답을 받지 않지만, Google Apps Script의 리디렉션을 우회하고
+            // 데이터를 성공적으로 전송(fire and forget)할 때 유용합니다.
+            // Apps Script는 데이터를 받아서 처리하기만 하면 됩니다.
+            
+            console.log('Sending data to Google Sheet:', data);
+            
+            await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', // 'no-cors' 모드로 변경하여 CORS 및 리디렉션 오류 방지
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            // 'no-cors' 모드에서는 응답을 확인할 수 없으므로, 
+            // 요청이 전송되었다고 가정하고 바로 성공으로 처리합니다.
+            console.log('Google Sheet로 데이터 전송 요청 완료.');
+            return { status: 'success' };
+        }
+
+
+        // --- 7. AI 기능 (로컬 템플릿 방식으로 수정) ---
+
+        // AI 템플릿 데이터
+        const aiTemplates = {
+            mission: [
+                "지역 주민의 삶을 풍요롭게 하는 지식과 만남의 공간.",
+                "책을 통해 세상을 연결하고, 배움을 통해 미래를 여는 마을의 사랑방.",
+                "모든 세대가 지혜를 나누고 꿈을 키우는, 우리 동네 문화 발전소."
+            ],
+            vision: [
+                "모두에게 열려 있는 지역의 문화 플랫폼.",
+                "사람과 이야기가 만나 창의성이 샘솟는, 지역 커뮤니티의 중심.",
+                "언제나 찾고 싶은, 집처럼 편안하고 지혜로 가득 찬 공간."
+            ],
+            core_values: [
+                "공유(Sharing), 배움(Learning), 연결(Connection), 창의성(Creativity)",
+                "환대(Welcome), 소통(Communication), 성장(Growth), 포용(Inclusion)",
+                "개방(Openness), 협력(Cooperation), 지역성(Community), 즐거움(Joy)"
+            ],
+            slogan: [
+                "책으로 여는 내일",
+                "작은 도서관, 큰 세상",
+                "마을을 품다, 책을 펴다",
+                "이야기가 꽃피는, 우리 동네 서재"
+            ],
+            about_library: [
+                "이곳은 책과 사람, 그리고 이야기가 만나는 따뜻한 공간입니다.\n\n우리 도서관은 단순히 책을 빌려주는 곳을 넘어, 지식과 경험을 나누고 서로의 성장을 곁에서 응원하는 지역 공동체의 구심점입니다.\n\n언제든 편안하게 들러 지혜의 샘물을 마시고, 이웃과 따뜻한 정을 나누는 당신의 공간이 되겠습니다.",
+                "[도서관명]은(는) [지역명]의 한가운데, 주민들의 자발적인 참여로 피어난 문화의 꽃입니다.\n\n우리는 모든 세대가 함께 어우러져 책을 읽고, 토론하며, 새로운 문화를 만들어가는 '마을의 거실'을 꿈꿉니다. 아이들의 웃음소리와 어른들의 지혜가 공존하는 이곳에서 당신의 일상이 더 풍요로워지길 바랍니다.\n\n지식이 필요할 때, 친구가 그리울 때, 언제든 편안하게 찾아주세요.",
+                "책 한 권에 담긴 우주를 여행하고 싶으신가요? [도서관명]은(는) 바로 그 여행의 출발점입니다.\n\n우리는 책을 매개로 사람과 사람을 잇고, 다양한 문화 프로그램을 통해 삶의 활력을 불어넣고자 합니다. 지식의 나눔이 일상이 되고, 문화의 향유가 습관이 되는 곳, [도서관명]에서 당신의 새로운 이야기를 시작해보세요."
+            ],
+            program_philosophy: [
+                "단순한 지식 전달을 넘어, 주민 간의 소통과 협력을 이끌어내는 참여형 프로그램을 지향합니다.",
+                "전 세대를 아우르는 평생학습의 기회를 제공하며, 독서의 즐거움을 삶의 일부로 만듭니다.",
+                "지역의 특색을 반영한 문화 예술 프로그램을 통해, 일상 속 창의성을 발견하도록 돕습니다."
+            ],
+            service_principles: [
+                "모든 이용객에게 친절하고 평등하게, 신뢰할 수 있는 정보를 제공하며, 편안한 접근성을 보장합니다.",
+                "따뜻한 미소로 맞이하고, 이용자의 목소리에 귀 기울이며, 언제나 깨끗하고 쾌적한 환경을 유지합니다.",
+                "전문성을 바탕으로 정확한 정보를 제공하며, 모든 세대가 편안하게 머물 수 있는 포용적인 공간을 만듭니다."
+            ],
+            space_concept: [
+                "따뜻한 조명과 원목 가구로 '우리집 서재' 같은 아늑함을 연출. 아이와 어른이 함께 책을 읽는 공간.",
+                "통유리창으로 햇살이 가득 들어오는 밝고 개방적인 공간. 자유롭게 토론할 수 있는 커뮤니티 테이블을 중심으로 합니다.",
+                "조용히 집중할 수 있는 1인용 좌석과, 아이들이 편안하게 뒹굴며 책을 볼 수 있는 마루 공간을 조화롭게 배치합니다."
+            ]
+        };
+
+        // 로컬 AI 템플릿 생성 함수
+        function generateLocalAIContent(questionId) {
+            const templates = aiTemplates[questionId];
+            if (!templates || templates.length === 0) {
+                return "AI 생성 예시입니다. 직접 수정해주세요."; // Fallback
+            }
+            
+            const answerInput = document.getElementById('answer-input');
+            const currentValue = answerInput ? answerInput.value : '';
+            
+            if (templates.length === 1) {
+                return templates[0]; // 선택지가 하나뿐이면 그냥 반환
+            }
+
+            let newTemplate = currentValue;
+            let attempts = 0;
+            
+            // 5번 정도 시도해서 현재 값과 다른 값을 찾음.
+            while (newTemplate === currentValue && attempts < 5) {
+                const randomIndex = Math.floor(Math.random() * templates.length);
+                newTemplate = templates[randomIndex];
+                attempts++;
+            }
+            
+            // [도서관명], [지역명] 플레이스홀더를 실제 값으로 치환
+            const libraryName = brandData.library_name || '우리 도서관';
+            const location = brandData.location || '우리 마을';
+            
+            newTemplate = newTemplate.replace(/\[도서관명\]/g, libraryName);
+            newTemplate = newTemplate.replace(/\[지역명\]/g, location);
+
+            return newTemplate;
+        }
+
+        async function handleAiGenerate(e) {
+            e.preventDefault();
+            const aiBtn = e.target;
+            const answerInput = document.getElementById('answer-input');
+            const q = questions[currentStep];
+
+            // 로딩 상태
+            aiBtn.disabled = true;
+            aiBtn.innerHTML = '<span class="ai-generating">🤖 생성 중</span>';
+            hideError(aiErrorMessage);
+
+            // 로컬 템플릿 생성
+            const aiText = generateLocalAIContent(q.id);
+
+            // 300ms 딜레이를 주어 "생성 중" 느낌을 줌 (사용자 경험)
+            setTimeout(() => {
+                answerInput.value = aiText;
+                saveAnswer(); // AI가 생성한 답을 즉시 저장
+                
+                // 버튼 상태 복구
+                aiBtn.disabled = false;
+                aiBtn.innerHTML = '🤖 AI로 작성하기';
+            }, 300);
+        }
+        
+        // --- 8. 초기화 및 이벤트 리스너 연결 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestion(currentStep);
+            
+            nextBtn.addEventListener('click', handleNext);
+            prevBtn.addEventListener('click', handlePrev);
+            restartBtn.addEventListener('click', restartApp);
+            saveImageBtn.addEventListener('click', saveAsJPG);
+        });
+    </script>
+</body>
+</html>
+
+
